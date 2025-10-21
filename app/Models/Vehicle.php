@@ -81,8 +81,61 @@ class Vehicle extends Model
     public function getMainImageAttribute()
     {
         if ($this->images && count($this->images) > 0) {
-            return $this->images[0];
+            return $this->getImageUrl($this->images[0]);
         }
         return '/images/car-placeholder.jpg';
+    }
+
+    /**
+     * Ottiene l'URL corretto per un'immagine
+     */
+    public function getImageUrl($imagePath)
+    {
+        // Se è già un URL completo (http/https), restituiscilo così com'è
+        if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
+            return $imagePath;
+        }
+        
+        // Se inizia con /storage/, genera URL assoluto
+        if (str_starts_with($imagePath, '/storage/')) {
+            return url($imagePath);
+        }
+        
+        // Se non inizia con /, aggiungi /storage/ e genera URL assoluto
+        if (!str_starts_with($imagePath, '/')) {
+            return url('storage/' . $imagePath);
+        }
+        
+        return url($imagePath);
+    }
+
+    /**
+     * Ottiene tutte le immagini con URL corretti
+     */
+    public function getFormattedImagesAttribute()
+    {
+        if (!$this->images) {
+            return [];
+        }
+        
+        return array_map(function ($image) {
+            return $this->getImageUrl($image);
+        }, $this->images);
+    }
+
+    /**
+     * Recupera la storia delle modifiche alle immagini di questo veicolo
+     */
+    public function getImageHistory()
+    {
+        return VehicleHistory::getImageHistoryForVehicle($this->id);
+    }
+
+    /**
+     * Recupera tutte le immagini mai utilizzate per questo veicolo
+     */
+    public function getAllHistoricalImages()
+    {
+        return VehicleHistory::getAllImagesForVehicle($this->id);
     }
 }

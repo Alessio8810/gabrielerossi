@@ -183,7 +183,7 @@
                     <div class="mb-4">
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Immagini Attuali</h4>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            @foreach($images as $index => $image)
+                            @foreach($this->formatted_images as $index => $image)
                                 <div class="relative">
                                     <img src="{{ $image }}" alt="Vehicle Image" class="w-full h-24 object-cover rounded-lg">
                                     <button type="button" 

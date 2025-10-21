@@ -17,8 +17,8 @@
                 <div class="p-6">
                     <!-- Immagine Principale -->
                     <div class="mb-4">
-                        @if($vehicle->images && count($vehicle->images) > 0)
-                            <img src="{{ $vehicle->images[$selectedImage] }}" 
+                        @if($vehicle->formatted_images && count($vehicle->formatted_images) > 0)
+                            <img src="{{ $vehicle->formatted_images[$selectedImage] }}" 
                                  alt="{{ $vehicle->title }}" 
                                  class="w-full h-96 object-cover rounded-lg shadow-md">
                         @else
@@ -29,9 +29,9 @@
                     </div>
 
                     <!-- Thumbnails -->
-                    @if($vehicle->images && count($vehicle->images) > 1)
+                    @if($vehicle->formatted_images && count($vehicle->formatted_images) > 1)
                         <div class="grid grid-cols-4 gap-2">
-                            @foreach($vehicle->images as $index => $image)
+                            @foreach($vehicle->formatted_images as $index => $image)
                                 <button wire:click="selectImage({{ $index }})" 
                                         class="focus:outline-none {{ $selectedImage === $index ? 'ring-2 ring-gold-600' : '' }}">
                                     <img src="{{ $image }}" 

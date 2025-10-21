@@ -36,7 +36,7 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Clear All Caches -->
-                    <a href="{{ route('artisan.clear-all') }}?token={{ $token }}" 
+                    <a href="/admin/artisan/clear-all?token={{ $token }}" 
                        class="block p-4 bg-gold-50 hover:bg-gold-100 rounded-lg border-2 border-gold-200 hover:border-gold-400 transition">
                         <div class="flex items-center">
                             <i class="fas fa-broom text-gold-600 text-2xl mr-3"></i>
@@ -48,7 +48,7 @@
                     </a>
 
                     <!-- Storage Link -->
-                    <a href="{{ route('artisan.index') }}?command=storage:link&token={{ $token }}" 
+                    <a href="/admin/artisan?command=storage:link&token={{ $token }}" 
                        class="block p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border-2 border-blue-200 hover:border-blue-400 transition">
                         <div class="flex items-center">
                             <i class="fas fa-link text-blue-600 text-2xl mr-3"></i>
@@ -60,7 +60,7 @@
                     </a>
 
                     <!-- NPM Build -->
-                    <a href="{{ route('artisan.index') }}?command=npm-build&token={{ $token }}" 
+                    <a href="/admin/artisan?command=npm-build&token={{ $token }}" 
                        class="block p-4 bg-green-50 hover:bg-green-100 rounded-lg border-2 border-green-200 hover:border-green-400 transition">
                         <div class="flex items-center">
                             <i class="fas fa-hammer text-green-600 text-2xl mr-3"></i>
@@ -77,7 +77,7 @@
             <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
                 <h2 class="text-xl font-bold text-elegant-900 mb-4">Esegui Comando</h2>
                 
-                <form method="GET" action="{{ route('artisan.index') }}" class="space-y-4">
+                <form method="GET" action="/admin/artisan" class="space-y-4">
                     <input type="hidden" name="token" value="{{ $token }}">
                     
                     <div>

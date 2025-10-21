@@ -38,4 +38,48 @@ class VehicleHistory extends Model
             'notes' => $notes,
         ]);
     }
+
+    /**
+     * Recupera la storia delle immagini per un veicolo specifico
+     */
+    public static function getImageHistoryForVehicle($vehicleId)
+    {
+        return static::where('vehicle_id', $vehicleId)
+            ->whereNotNull('old_data')
+            ->orWhereNotNull('new_data')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($history) {
+                return [
+                    'id' => $history->id,
+                    'vehicle_id' => $history->vehicle_id,
+                    'action' => $history->action,
+                    'old_images' => $history->old_data['images'] ?? [],
+                    'new_images' => $history->new_data['images'] ?? [],
+                    'user_name' => $history->user_name,
+                    'date' => $history->created_at->format('d/m/Y H:i'),
+                    'notes' => $history->notes,
+                ];
+            });
+    }
+
+    /**
+     * Recupera tutte le immagini mai utilizzate per un veicolo
+     */
+    public static function getAllImagesForVehicle($vehicleId)
+    {
+        $histories = static::where('vehicle_id', $vehicleId)->get();
+        $allImages = [];
+
+        foreach ($histories as $history) {
+            if (isset($history->old_data['images'])) {
+                $allImages = array_merge($allImages, $history->old_data['images']);
+            }
+            if (isset($history->new_data['images'])) {
+                $allImages = array_merge($allImages, $history->new_data['images']);
+            }
+        }
+
+        return array_unique($allImages);
+    }
 }
