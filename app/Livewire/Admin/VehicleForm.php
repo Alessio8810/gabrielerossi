@@ -100,16 +100,16 @@ class VehicleForm extends Component
         
         // Altrimenti formatta manualmente
         return array_map(function ($image) {
-            // Se è già un URL completo, restituiscilo così com'è
+            // Se è già un URL completo (incluso quelli con public/storage), restituiscilo così com'è
             if (filter_var($image, FILTER_VALIDATE_URL)) {
                 return $image;
             }
-            // Se inizia con /storage/, genera URL assoluto
+            // Se inizia con /storage/, genera URL assoluto con public
             if (str_starts_with($image, '/storage/')) {
-                return url($image);
+                return url('public' . $image);
             }
-            // Altrimenti aggiungi /storage/ e genera URL assoluto
-            return url('storage/' . ltrim($image, '/'));
+            // Altrimenti aggiungi /public/storage/ e genera URL assoluto
+            return url('public/storage/' . ltrim($image, '/'));
         }, $this->images);
     }
 
@@ -125,19 +125,38 @@ class VehicleForm extends Component
         $this->newImages = array_values($this->newImages);
     }
 
+    /**
+     * Carica le immagini per un veicolo specifico con struttura cartelle organizzata
+     */
+    private function uploadImagesForVehicle($vehicleId)
+    {
+        $uploadedImages = [];
+        
+        foreach ($this->newImages as $index => $image) {
+            // Genera nome file descrittivo: vehicleId_timestamp_index.extension
+            $extension = $image->getClientOriginalExtension();
+            $originalName = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
+            $fileName = $vehicleId . '_' . $originalName . '_' . time() . '_' . $index . '.' . $extension;
+            
+            // Percorso cartella: vehicles/vehicleId/
+            $folderPath = 'vehicles/' . $vehicleId;
+            
+            // Salva il file nella cartella specifica del veicolo
+            $path = $image->storeAs($folderPath, $fileName, 'public');
+            
+            // Salva il path relativo (es. vehicles/{id}/{file}) nel DB. La risoluzione a URL assoluto
+            // viene fatta dal model tramite getImageUrl() / formatted_images
+            $uploadedImages[] = $path;
+        }
+        
+        return $uploadedImages;
+    }
+
     public function save()
     {
         $this->validate();
 
-        // Handle image uploads
-        $uploadedImages = [];
-        foreach ($this->newImages as $image) {
-            $path = $image->store('vehicles', 'public');
-            $uploadedImages[] = url('storage/' . $path);
-        }
-
-        $allImages = array_merge($this->images, $uploadedImages);
-
+        // Prepara i dati del veicolo senza immagini
         $vehicleData = [
             'title' => $this->title,
             'description' => $this->description,
@@ -153,27 +172,33 @@ class VehicleForm extends Component
             'color' => $this->color,
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
-            'images' => $allImages,
+            'images' => $this->images, // Immagini esistenti per ora
         ];
 
         if ($this->vehicleId) {
             // Update existing vehicle
             $vehicle = Vehicle::findOrFail($this->vehicleId);
             $oldData = $vehicle->toArray();
-            
-            // Verifica se le immagini sono cambiate
             $oldImages = $vehicle->images ?? [];
-            $newImages = $allImages;
-            $imagesChanged = json_encode($oldImages) !== json_encode($newImages);
             
             $vehicle->update($vehicleData);
+            
+            // Handle new image uploads for existing vehicle
+            $uploadedImages = $this->uploadImagesForVehicle($vehicle->id);
+            $allImages = array_merge($this->images, $uploadedImages);
+            
+            // Update vehicle with new images
+            $vehicle->update(['images' => $allImages]);
+
+            // Verifica se le immagini sono cambiate
+            $imagesChanged = json_encode($oldImages) !== json_encode($allImages);
 
             // Log generale per tutte le modifiche
             VehicleHistory::logAction(
                 $this->vehicleId,
                 'updated',
                 $oldData,
-                $vehicleData,
+                array_merge($vehicleData, ['images' => $allImages]),
                 'Veicolo aggiornato da admin'
             );
 
@@ -183,21 +208,28 @@ class VehicleForm extends Component
                     $this->vehicleId,
                     'images_updated',
                     ['images' => $oldImages],
-                    ['images' => $newImages],
-                    sprintf('Immagini modificate: da %d a %d immagini', count($oldImages), count($newImages))
+                    ['images' => $allImages],
+                    sprintf('Immagini modificate: da %d a %d immagini', count($oldImages), count($allImages))
                 );
             }
 
             session()->flash('message', 'Veicolo aggiornato con successo.');
         } else {
-            // Create new vehicle
+            // Create new vehicle first without images
             $vehicle = Vehicle::create($vehicleData);
+            
+            // Now handle image uploads with the vehicle ID
+            $uploadedImages = $this->uploadImagesForVehicle($vehicle->id);
+            $allImages = array_merge($this->images, $uploadedImages);
+            
+            // Update vehicle with images
+            $vehicle->update(['images' => $allImages]);
 
             VehicleHistory::logAction(
                 $vehicle->id,
                 'created',
                 null,
-                $vehicleData,
+                array_merge($vehicleData, ['images' => $allImages]),
                 'Veicolo creato da admin'
             );
 

@@ -91,36 +91,104 @@ class Vehicle extends Model
      */
     public function getImageUrl($imagePath)
     {
-        // Se è già un URL completo (http/https), restituiscilo così com'è
-        if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
-            return $imagePath;
+        // Se viene passato un array meta, estrai la stringa
+        if (is_array($imagePath)) {
+            $imagePath = $imagePath['url'] ?? $imagePath['original'] ?? '';
         }
-        
-        // Se inizia con /storage/, genera URL assoluto
+
+        $imagePath = trim((string) $imagePath);
+
+        if ($imagePath === '') {
+            return '/images/car-placeholder.jpg';
+        }
+
+        // Se è già un URL completo (http/https) prendi l'ultima occorrenza valida
+        if (strpos($imagePath, '://') !== false || filter_var($imagePath, FILTER_VALIDATE_URL)) {
+            // Se ci sono più schemi (duplicazioni), prendi la sottostringa dall'ultima occorrenza di http(s)://
+            if (preg_match_all('#https?://#i', $imagePath, $matches, PREG_OFFSET_CAPTURE)) {
+                $last = end($matches[0]);
+                $pos = $last[1];
+                $imagePath = substr($imagePath, $pos);
+            }
+
+            // Codifica spazi
+            return str_replace(' ', '%20', $imagePath);
+        }
+
+        // Helper per costruire URL codificando i segmenti del path
+        $buildUrlFromPath = function(string $path) {
+            $clean = preg_replace('#^/+#', '', $path);
+            $segments = explode('/', $clean);
+            $segments = array_map('rawurlencode', $segments);
+            return url(implode('/', $segments));
+        };
+
+        // Se inizia con /storage/, genera URL assoluto con public
         if (str_starts_with($imagePath, '/storage/')) {
-            return url($imagePath);
+            return $buildUrlFromPath('public' . $imagePath);
         }
-        
-        // Se non inizia con /, aggiungi /storage/ e genera URL assoluto
+
+        // Se l'immagine è già un path che contiene 'public/storage', evita duplicazioni
+        if (str_contains($imagePath, 'public/storage')) {
+            return $buildUrlFromPath($imagePath);
+        }
+
+        // Se non inizia con /, aggiungi /public/storage/ e genera URL assoluto
         if (!str_starts_with($imagePath, '/')) {
-            return url('storage/' . $imagePath);
+            return $buildUrlFromPath('public/storage/' . ltrim($imagePath, '/'));
         }
-        
-        return url($imagePath);
+
+        return $buildUrlFromPath('public' . $imagePath);
     }
 
     /**
-     * Ottiene tutte le immagini con URL corretti
+     * Ottiene le immagini formattate con URL corretti
      */
     public function getFormattedImagesAttribute()
     {
-        if (!$this->images) {
+        if (empty($this->images)) {
             return [];
         }
+
+        $images = is_string($this->images) ? json_decode($this->images, true) : $this->images;
         
-        return array_map(function ($image) {
+        if (!is_array($images)) {
+            return [];
+        }
+        // Restituisci sempre un array di stringhe con URL (compatibile con le view che si aspettano src come stringa)
+        return array_values(array_map(function($image) {
+            // Se l'elemento è un array con meta (es. ['original' => ..., 'url' => ...]), estrai l'url
+            if (is_array($image)) {
+                if (isset($image['url']) && filter_var($image['url'], FILTER_VALIDATE_URL)) {
+                    return $image['url'];
+                }
+                // fallback to 'original' key if present
+                $image = $image['original'] ?? '';
+            }
+
+            // Normalizza stringhe vuote
+            if (empty($image) || !is_string($image)) {
+                return null;
+            }
+
+            // Se è già un URL completo, usalo così com'è
+            if (filter_var($image, FILTER_VALIDATE_URL)) {
+                return $image;
+            }
+
+            // Se l'immagine è già un path con la struttura organizzata (vehicles/ID/filename)
+            if (str_starts_with($image, 'vehicles/' . $this->id . '/')) {
+                return url('public/storage/' . ltrim($image, '/'));
+            }
+
+            // Se inizia già con '/storage/' evita duplicazioni
+            if (str_starts_with($image, '/storage/')) {
+                return url('public' . $image);
+            }
+
+            // Usa il metodo getImageUrl per compatibilità con le immagini esistenti
             return $this->getImageUrl($image);
-        }, $this->images);
+        }, $images));
     }
 
     /**

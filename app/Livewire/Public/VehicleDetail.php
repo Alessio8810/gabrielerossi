@@ -19,6 +19,25 @@ class VehicleDetail extends Component
 
     public function selectImage($index)
     {
+        // Assicura che l'indice sia un intero >= 0
+        $index = (int) $index;
+
+        $images = $this->vehicle->formatted_images ?? $this->vehicle->images ?? [];
+        $count = is_array($images) ? count($images) : 0;
+
+        if ($count === 0) {
+            $this->selectedImage = 0;
+            return;
+        }
+
+        // Clamp index nel range disponibile
+        if ($index < 0) {
+            $index = 0;
+        }
+        if ($index >= $count) {
+            $index = $count - 1;
+        }
+
         $this->selectedImage = $index;
     }
 

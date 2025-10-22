@@ -17,8 +17,21 @@
                 <div class="p-6">
                     <!-- Immagine Principale -->
                     <div class="mb-4">
-                        @if($vehicle->formatted_images && count($vehicle->formatted_images) > 0)
-                            <img src="{{ $vehicle->formatted_images[$selectedImage] }}" 
+                        @php
+                            $images = $vehicle->formatted_images ?? [];
+                            $mainImageUrl = null;
+                            if (!empty($images)) {
+                                $idx = is_numeric($selectedImage) ? (int) $selectedImage : 0;
+                                if (isset($images[$idx])) {
+                                    $mainImageUrl = is_array($images[$idx]) ? $images[$idx]['url'] : $images[$idx];
+                                } elseif (isset($images[0])) {
+                                    $mainImageUrl = is_array($images[0]) ? $images[0]['url'] : $images[0];
+                                }
+                            }
+                        @endphp
+
+                        @if($mainImageUrl)
+                            <img src="{{ $mainImageUrl }}" 
                                  alt="{{ $vehicle->title }}" 
                                  class="w-full h-96 object-cover rounded-lg shadow-md">
                         @else
@@ -29,12 +42,15 @@
                     </div>
 
                     <!-- Thumbnails -->
-                    @if($vehicle->formatted_images && count($vehicle->formatted_images) > 1)
+                    @if(!empty($images) && count($images) > 1)
                         <div class="grid grid-cols-4 gap-2">
-                            @foreach($vehicle->formatted_images as $index => $image)
+                            @foreach($images as $index => $image)
+                                @php
+                                    $imageUrl = is_array($image) ? $image['url'] : $image;
+                                @endphp
                                 <button wire:click="selectImage({{ $index }})" 
                                         class="focus:outline-none {{ $selectedImage === $index ? 'ring-2 ring-gold-600' : '' }}">
-                                    <img src="{{ $image }}" 
+                                    <img src="{{ $imageUrl }}" 
                                          alt="Thumbnail {{ $index + 1 }}" 
                                          class="w-full h-20 object-cover rounded-md hover:opacity-75 transition-opacity">
                                 </button>

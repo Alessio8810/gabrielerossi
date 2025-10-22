@@ -70,6 +70,18 @@
                             </div>
                         </div>
                     </a>
+
+                    <!-- Normalize Images -->
+                    <a href="/admin/artisan?command=normalize-images&token={{ $token }}" 
+                       class="block p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition">
+                        <div class="flex items-center">
+                            <i class="fas fa-images text-purple-600 text-2xl mr-3"></i>
+                            <div>
+                                <h3 class="font-bold text-elegant-900">Normalizza Immagini</h3>
+                                <p class="text-sm text-elegant-600">Pulisce URL duplicati nelle immagini veicoli</p>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             </div>
 
@@ -97,6 +109,7 @@
                             <option value="migrate" {{ $command === 'migrate' ? 'selected' : '' }}>migrate</option>
                             <option value="db:seed" {{ $command === 'db:seed' ? 'selected' : '' }}>db:seed</option>
                             <option value="npm-build" {{ $command === 'npm-build' ? 'selected' : '' }}>npm run build</option>
+                            <option value="normalize-images" {{ $command === 'normalize-images' ? 'selected' : '' }}>normalize images</option>
                         </select>
                     </div>
 

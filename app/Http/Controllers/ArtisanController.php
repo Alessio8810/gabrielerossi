@@ -43,6 +43,7 @@ class ArtisanController extends Controller
             // Comandi speciali che non sono Artisan
             $shellCommands = [
                 'npm-build' => 'cd ' . base_path() . ' && npm run build',
+                'normalize-images' => 'cd ' . base_path() . ' && php scripts/normalize_images.php',
             ];
 
             if (in_array($command, $allowedCommands)) {
